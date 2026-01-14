@@ -1,0 +1,9 @@
+{
+  "name": "Bapekom Absensi Smart",
+  "description": "Sistem absensi magang Bapekom Wilayah VIII Makassar dengan validasi lokasi, foto selfie, dan dashboard admin berbasis AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
