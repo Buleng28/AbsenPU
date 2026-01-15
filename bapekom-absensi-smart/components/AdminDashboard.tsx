@@ -16,6 +16,9 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
+// Helper to check if user is super admin
+const isSuperAdmin = (user: User): boolean => user.role === 'super-admin' || user.username === 'ulil.amri';
+
 // Helper to safely extract error messages and prevent [object Object]
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -69,7 +72,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     email: '',
     password: '',
     division: '',
-    role: 'intern' as 'intern' | 'admin'
+    role: 'intern' as 'intern' | 'admin' | 'super-admin'
   });
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
@@ -612,10 +615,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                 <div className="w-8 h-8 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-center">
                   <img src="./logo.png" alt="Logo" className="w-full h-full object-contain" />
                 </div>
-                <h1 className="font-bold dark:text-white text-sm">BAPEKOM</h1>
+                <div>
+                  <h1 className="font-bold dark:text-white text-sm">BAPEKOM</h1>
+                  {isSuperAdmin(user) && <p className="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase tracking-wide">Super Admin</p>}
+                </div>
               </div>
             </div>
-            <button onClick={onLogout} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center active:scale-95 transition-transform"><i className="fas fa-sign-out-alt"></i></button>
+            <div className="flex items-center gap-3">
+              <div className="text-right text-xs">
+                <p className="font-bold dark:text-white">{user.name}</p>
+                <p className="text-slate-400">{isSuperAdmin(user) ? 'Super Admin' : 'Admin'}</p>
+              </div>
+              <button onClick={onLogout} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center active:scale-95 transition-transform"><i className="fas fa-sign-out-alt"></i></button>
+            </div>
           </div>
 
           {activeTab === 'dashboard' && (
@@ -759,9 +771,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                   <button onClick={handleExportUsersData} className="px-4 py-2 bg-emerald-600 text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors text-sm font-bold">
                     <i className="fas fa-file-csv"></i> Export CSV
                   </button>
-                  <button onClick={() => setShowAddUserModal(true)} className="w-10 h-10 bg-blue-600 text-white rounded-xl shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors"><i className="fas fa-plus"></i></button>
+                  {isSuperAdmin(user) && (
+                    <button onClick={() => setShowAddUserModal(true)} className="w-10 h-10 bg-blue-600 text-white rounded-xl shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors" title="Tambah User (Super Admin Only)"><i className="fas fa-plus"></i></button>
+                  )}
                 </div>
               </div>
+
+              {!isSuperAdmin(user) && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl text-sm text-amber-700 dark:text-amber-400 mb-6 flex items-center gap-2">
+                  <i className="fas fa-info-circle"></i>
+                  Anda adalah Admin biasa. Hanya Super Admin yang bisa menambah atau menghapus user.
+                </div>
+              )}
 
               <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border dark:border-slate-800 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -777,9 +798,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                             <div className="text-xs text-slate-400">@{u.username}</div>
                           </td>
                           <td className="px-6 py-4 dark:text-slate-300">{u.division}</td>
-                          <td className="px-6 py-4"><span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{u.role}</span></td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                              u.role === 'super-admin' 
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' 
+                                : u.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                            }`}>
+                              {u.role === 'super-admin' ? 'Super Admin' : u.role === 'admin' ? 'Admin' : 'Intern'}
+                            </span>
+                          </td>
                           <td className="px-6 py-4 text-center">
-                            {u.role !== 'admin' && <button onClick={(e) => handleDeleteClick(e, u)} className="text-slate-400 hover:text-red-500 p-2 transition-colors"><i className="fas fa-trash-alt"></i></button>}
+                            {isSuperAdmin(user) && u.role !== 'super-admin' && (
+                              <button onClick={(e) => handleDeleteClick(e, u)} className="text-slate-400 hover:text-red-500 p-2 transition-colors" title="Hapus User"><i className="fas fa-trash-alt"></i></button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1101,7 +1134,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
           )}
         </main>
 
-        {showAddUserModal && (
+        {showAddUserModal && isSuperAdmin(user) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border dark:border-slate-800">
               <div className="flex justify-between items-center mb-6">
@@ -1174,10 +1207,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                   <select
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 text-sm text-slate-700 dark:text-slate-200 font-medium"
                     value={newUserForm.role}
-                    onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value as 'intern' | 'admin' })}
+                    onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value as 'intern' | 'admin' | 'super-admin' })}
                   >
                     <option value="intern">Intern (Magang)</option>
-                    <option value="admin">Admin</option>
+                    <option value="admin">Admin Biasa</option>
+                    {isSuperAdmin(user) && <option value="super-admin">Super Admin</option>}
                   </select>
                 </div>
 
