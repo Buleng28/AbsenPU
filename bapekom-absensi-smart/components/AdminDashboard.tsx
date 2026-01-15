@@ -9,6 +9,7 @@ import { getLeaveRequests, updateLeaveStatus, getPendingLeaveCount } from '../se
 import DailyStatusChart from './DailyStatusChart';
 import DivisionPieChart from './DivisionPieChart';
 import WeeklyBarChart from './WeeklyBarChart';
+import AttendanceOverview from './AttendanceOverview';
 
 interface AdminDashboardProps {
   user: User;
@@ -47,7 +48,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   });
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'settings' | 'leaves' | 'history'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'overview' | 'users' | 'settings' | 'leaves' | 'history'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Dashboard State
@@ -101,6 +102,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   type LeaveFilterType = 'all' | 'pending' | 'approved' | 'rejected';
   const [leaveFilter, setLeaveFilter] = useState<LeaveFilterType>('pending');
 
+  // Photo Modal State
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string>('');
+
   // Rejection Modal State
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -118,7 +123,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'history') {
+    if (activeTab === 'history' || activeTab === 'overview') {
       fetchAttendanceHistory();
     }
   }, [activeTab]);
@@ -569,14 +574,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
             </div>
 
             <nav className="space-y-2">
-              {['dashboard', 'users', 'leaves', 'history', 'settings'].map((tab) => (
+              {['dashboard', 'overview', 'users', 'leaves', 'history', 'settings'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => { setActiveTab(tab as any); setIsSidebarOpen(false); }}
                   className={`w-full flex items-center gap-3 py-3 px-4 rounded-xl transition-all shadow-sm text-left ${activeTab === tab ? 'bg-white/10 text-white' : 'hover:bg-white/5 hover:text-white'}`}
                 >
-                  <i className={`fas fa-${tab === 'dashboard' ? 'home' : tab === 'users' ? 'users' : tab === 'leaves' ? 'envelope-open-text' : tab === 'history' ? 'history' : 'cog'} w-5 text-center`}></i>
-                  <span className="text-sm font-medium capitalize">{tab === 'users' ? 'Data Magang' : tab === 'leaves' ? 'Perizinan' : tab === 'history' ? 'Riwayat Absen' : tab}</span>
+                  <i className={`fas fa-${tab === 'dashboard' ? 'home' : tab === 'overview' ? 'chart-line' : tab === 'users' ? 'users' : tab === 'leaves' ? 'envelope-open-text' : tab === 'history' ? 'history' : 'cog'} w-5 text-center`}></i>
+                  <span className="text-sm font-medium capitalize">{tab === 'overview' ? 'Analisis' : tab === 'users' ? 'Data Magang' : tab === 'leaves' ? 'Perizinan' : tab === 'history' ? 'Riwayat Absen' : tab}</span>
                   {tab === 'leaves' && pendingLeaveCount > 0 && (
                     <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingLeaveCount}</span>
                   )}
@@ -785,6 +790,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
             </div>
           )}
 
+          {activeTab === 'overview' && (
+            <div className="animate-fade-in space-y-8">
+              <div className="flex justify-between items-end mb-6">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Analisis Absensi</h1>
+                  <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Data riwayat absensi dan analisis kehadiran peserta magang.</p>
+                </div>
+                <button onClick={fetchAttendanceHistory} className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-colors" title="Refresh Data">
+                  <i className={`fas fa-sync-alt ${loadingAllAttendance ? 'fa-spin' : ''}`}></i>
+                </button>
+              </div>
+              {loadingAllAttendance ? (
+                <div className="text-center py-20">
+                  <i className="fas fa-circle-notch fa-spin text-4xl text-slate-300 mb-4"></i>
+                  <p className="text-slate-400">Memuat data analisis...</p>
+                </div>
+              ) : (
+                <AttendanceOverview allAttendance={allAttendance} users={usersList} />
+              )}
+            </div>
+          )}
+
           {activeTab === 'leaves' && (
             <div className="animate-fade-in">
               <div className="flex justify-between items-end mb-8">
@@ -969,7 +996,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="w-10 h-10 ml-auto bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden cursor-pointer border dark:border-slate-700 shadow-sm hover:scale-110 transition-transform" onClick={() => window.open(r.photoUrl, '_blank')}>
+                              <div className="w-10 h-10 ml-auto bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden cursor-pointer border dark:border-slate-700 shadow-sm hover:scale-110 transition-transform" onClick={() => { setSelectedPhoto(r.photoUrl); setShowPhotoModal(true); }}>
                                 <img src={r.photoUrl} alt="Bukti" className="w-full h-full object-cover" />
                               </div>
                             </td>
@@ -1294,6 +1321,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showPhotoModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setShowPhotoModal(false)}>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-2xl w-full shadow-2xl animate-fade-in-up border dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Bukti Absensi</h3>
+                <button onClick={() => setShowPhotoModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-2xl">
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+              <div className="bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden flex items-center justify-center max-h-96">
+                <img src={selectedPhoto} alt="Bukti Absensi" className="w-full h-full object-contain" />
+              </div>
             </div>
           </div>
         )}

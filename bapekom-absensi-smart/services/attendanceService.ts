@@ -36,6 +36,64 @@ const isTodayInRange = (startDate: string, endDate: string) => {
 
 // --- Service Methods ---
 
+// Helper to upload photo to Supabase Storage
+export const uploadAttendancePhoto = async (base64Data: string, userId: string, timestamp: string): Promise<string> => {
+  if (!isSupabaseConfigured || !supabase) {
+    console.log('Supabase not configured, using base64 fallback');
+    return base64Data;
+  }
+
+  try {
+    // Extract base64 string (remove data:image/jpeg;base64, prefix if present)
+    let base64String = base64Data;
+    if (base64Data.includes(',')) {
+      base64String = base64Data.split(',')[1];
+    }
+
+    // Convert base64 to blob
+    const binaryString = atob(base64String);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: 'image/jpeg' });
+
+    // Create unique filename
+    const dateObj = new Date(timestamp);
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const time = dateObj.getTime();
+    const filename = `${userId}/${year}-${month}-${day}_${time}.jpg`;
+
+    console.log('Uploading photo to:', filename);
+
+    // Upload to storage
+    const { data, error } = await supabase.storage
+      .from('attendance-photos')
+      .upload(filename, blob, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Photo upload error:', error);
+      return base64Data;
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('attendance-photos')
+      .getPublicUrl(filename);
+
+    console.log('Photo uploaded successfully:', urlData?.publicUrl);
+    return urlData?.publicUrl || base64Data;
+  } catch (err) {
+    console.error('Photo upload exception:', err);
+    return base64Data;
+  }
+};
+
 export const checkLocationValidity = (lat: number, lng: number): boolean => {
   const settings = getSettings();
   const distance = getDistanceFromLatLonInKm(lat, lng, settings.officeLat, settings.officeLng);
@@ -56,6 +114,7 @@ export const submitAttendance = async (record: Omit<AttendanceRecord, 'id' | 'is
 
   const isValidLoc = checkLocationValidity(record.location.latitude, record.location.longitude);
 
+  // Keep photoUrl as base64 for now (no storage upload)
   const fullRecord: AttendanceRecord = {
     ...record,
     id: generateId(),
