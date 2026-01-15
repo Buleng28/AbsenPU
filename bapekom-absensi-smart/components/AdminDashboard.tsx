@@ -89,6 +89,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [searchName, setSearchName] = useState<string>('');
 
   // Settings State
   const [settingsForm, setSettingsForm] = useState<SystemSettings>(getSettings());
@@ -146,17 +147,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     }
   };
 
-  // Function to filter attendance by month
+  // Function to filter attendance by month and name
   const getFilteredAttendance = () => {
-    if (!selectedMonth) return allAttendance;
-    
-    const [year, month] = selectedMonth.split('-');
-    return allAttendance.filter(record => {
-      const recordDate = new Date(record.timestamp);
-      const recordYear = recordDate.getFullYear().toString();
-      const recordMonth = String(recordDate.getMonth() + 1).padStart(2, '0');
-      return recordYear === year && recordMonth === month;
-    });
+    let filtered = allAttendance;
+
+    // Filter by month if selected
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split('-');
+      filtered = filtered.filter(record => {
+        const recordDate = new Date(record.timestamp);
+        const recordYear = recordDate.getFullYear().toString();
+        const recordMonth = String(recordDate.getMonth() + 1).padStart(2, '0');
+        return recordYear === year && recordMonth === month;
+      });
+    }
+
+    // Filter by name if searched
+    if (searchName.trim()) {
+      filtered = filtered.filter(record =>
+        record.userName.toLowerCase().includes(searchName.toLowerCase())
+      );
+    }
+
+    return filtered;
   };
 
   // Generate month options (last 12 months)
@@ -878,6 +891,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                   <p className="text-slate-400 text-sm mt-1">Data absensi lengkap dari seluruh peserta magang.</p>
                 </div>
                 <div className="flex gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Cari nama peserta magang..."
+                      value={searchName}
+                      onChange={e => setSearchName(e.target.value)}
+                      className="w-full px-4 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none text-sm placeholder-slate-400 dark:placeholder-slate-500"
+                    />
+                  </div>
                   <select
                     value={selectedMonth}
                     onChange={e => setSelectedMonth(e.target.value)}
@@ -899,6 +921,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               </div>
 
               <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border dark:border-slate-800 overflow-hidden">
+                {searchName && (
+                  <div className="px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border-b dark:border-slate-800 text-sm text-blue-700 dark:text-blue-300">
+                    Hasil pencarian untuk <span className="font-bold">"{searchName}"</span>: {getFilteredAttendance().length} data
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase text-[10px] font-bold tracking-wider">
