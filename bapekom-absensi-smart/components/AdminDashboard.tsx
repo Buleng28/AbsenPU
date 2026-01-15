@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { User, AttendanceRecord, DashboardStats, WeeklyStats, SystemSettings, LeaveRequest } from '../types';
-import { getTodaysRecords, getAllStats, getWeeklyStats, getUserAttendanceHistory, getAllAttendanceRecords } from '../services/attendanceService';
+import { getTodaysRecords, getRecentRecords, getAllStats, getWeeklyStats, getUserAttendanceHistory, getAllAttendanceRecords } from '../services/attendanceService';
 import { generateDailySummary } from '../services/geminiService';
 import { getUsers, addUser, updateUser, deleteUser } from '../services/userService';
 import { getSettings, saveSettings } from '../services/settingsService';
@@ -52,6 +52,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
   // Dashboard State
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [recentRecords, setRecentRecords] = useState<AttendanceRecord[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats[]>([]);
   const [summary, setSummary] = useState<string>('');
@@ -82,6 +83,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   // Full Attendance History State
   const [allAttendance, setAllAttendance] = useState<AttendanceRecord[]>([]);
   const [loadingAllAttendance, setLoadingAllAttendance] = useState(false);
+  
+  // History Filter State
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   // Settings State
   const [settingsForm, setSettingsForm] = useState<SystemSettings>(getSettings());
@@ -139,13 +146,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     }
   };
 
+  // Function to filter attendance by month
+  const getFilteredAttendance = () => {
+    if (!selectedMonth) return allAttendance;
+    
+    const [year, month] = selectedMonth.split('-');
+    return allAttendance.filter(record => {
+      const recordDate = new Date(record.timestamp);
+      const recordYear = recordDate.getFullYear().toString();
+      const recordMonth = String(recordDate.getMonth() + 1).padStart(2, '0');
+      return recordYear === year && recordMonth === month;
+    });
+  };
+
+  // Generate month options (last 12 months)
+  const getMonthOptions = () => {
+    const months = [];
+    for (let i = 0; i < 12; i++) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const monthName = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+      months.push({ value: `${year}-${month}`, label: monthName });
+    }
+    return months;
+  };
+
   const fetchData = async () => {
     try {
       const recs = await getTodaysRecords();
+      const recent = await getRecentRecords();
       const st = await getAllStats();
       const weekly = await getWeeklyStats();
 
       setRecords(recs);
+      setRecentRecords(recent);
       setStats(st);
       setWeeklyStats(weekly);
 
@@ -656,15 +692,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               </div>
 
               <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border dark:border-slate-800 shadow-sm">
-                <h3 className="font-bold mb-4 dark:text-white">Aktivitas Terkini</h3>
-                {records.length === 0 ? <p className="text-slate-400 text-center py-8">Belum ada data absensi hari ini.</p> : (
+                <h3 className="font-bold mb-4 dark:text-white">Aktivitas Terkini (30 Hari Terakhir)</h3>
+                {recentRecords.length === 0 ? (
+                  <p className="text-slate-400 text-center py-8">Memuat data aktivitas...</p>
+                ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                       <thead>
                         <tr className="text-slate-400 border-b dark:border-slate-800"><th className="pb-3 pl-2">Waktu</th><th className="pb-3">User</th><th className="pb-3">Status</th><th className="pb-3 text-right pr-2">Bukti</th></tr>
                       </thead>
                       <tbody>
-                        {records.map(r => (
+                        {recentRecords.map(r => (
                           <tr key={r.id} className="border-b dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="py-3 pl-2 dark:text-slate-300 font-mono">{new Date(r.timestamp).toLocaleTimeString()}</td>
                             <td className="py-3">
@@ -840,6 +878,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                   <p className="text-slate-400 text-sm mt-1">Data absensi lengkap dari seluruh peserta magang.</p>
                 </div>
                 <div className="flex gap-3">
+                  <select
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(e.target.value)}
+                    className="px-4 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                  >
+                    {getMonthOptions().map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                   <button onClick={fetchAttendanceHistory} className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-colors" title="Refresh Data">
                     <i className={`fas fa-sync-alt ${loadingAllAttendance ? 'fa-spin' : ''}`}></i>
                   </button>
@@ -866,12 +915,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         <tr>
                           <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic">Memuat data riwayat...</td>
                         </tr>
-                      ) : allAttendance.length === 0 ? (
+                      ) : getFilteredAttendance().length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic">Belum ada data riwayat absensi.</td>
+                          <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic">Belum ada data riwayat absensi untuk bulan ini.</td>
                         </tr>
                       ) : (
-                        allAttendance.map(r => (
+                        getFilteredAttendance().map(r => (
                           <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="font-bold dark:text-white">{new Date(r.timestamp).toLocaleDateString()}</div>

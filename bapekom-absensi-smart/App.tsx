@@ -6,6 +6,7 @@ import InternDashboard from './components/InternDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import { loginUser } from './services/userService';
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
+import { checkSupabaseHealth } from './services/diagnosticService';
 
 const App: React.FC = () => {
   // State management
@@ -35,6 +36,9 @@ const App: React.FC = () => {
 
   // Effect to check for an existing session on app load
   useEffect(() => {
+    // Run diagnostic check
+    checkSupabaseHealth();
+    
     const checkSession = async () => {
       setLoading(true);
       try {

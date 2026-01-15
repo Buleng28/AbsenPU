@@ -76,23 +76,43 @@ export const submitAttendance = async (record: Omit<AttendanceRecord, 'id' | 'is
 
 export const getTodaysRecords = async (): Promise<AttendanceRecord[]> => {
   try {
-    if (isSupabaseConfigured && supabase) {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('*')
-        .gte('timestamp', `${today}T00:00:00`)
-        .order('timestamp', { ascending: false });
-
-      if (error) throw error;
-      return data as AttendanceRecord[];
-    }
-    throw new Error('Supabase skipped');
+    // Get ALL records first from Supabase
+    const allRecords = await getAllAttendanceRecords();
+    
+    // Filter for today's records only
+    const today = new Date().toISOString().split('T')[0];
+    const todaysRecords = allRecords.filter(r => r.timestamp.startsWith(today));
+    
+    console.log('getTodaysRecords: Looking for date:', today);
+    console.log('getTodaysRecords: Found', todaysRecords.length, 'records for today');
+    
+    return todaysRecords;
   } catch (err) {
+    console.error("Error fetching today's records:", err);
     // Local Storage Fallback
     const all = JSON.parse(localStorage.getItem('bapekom_attendance') || '[]');
     const todayStr = new Date().toISOString().split('T')[0];
     return all.filter((r: AttendanceRecord) => r.timestamp.startsWith(todayStr));
+  }
+};
+
+// Get recent records (last 30 days) for activity display
+export const getRecentRecords = async (): Promise<AttendanceRecord[]> => {
+  try {
+    const allRecords = await getAllAttendanceRecords();
+    
+    // Get records from last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    const recentRecords = allRecords.filter(r => r.timestamp >= thirtyDaysAgoStr);
+    console.log('getRecentRecords: Returning', recentRecords.length, 'records from last 30 days');
+    return recentRecords;
+  } catch (err) {
+    console.error("Error fetching recent records:", err);
+    const all = JSON.parse(localStorage.getItem('bapekom_attendance') || '[]');
+    return all;
   }
 };
 
@@ -104,13 +124,25 @@ export const getAllAttendanceRecords = async (): Promise<AttendanceRecord[]> => 
         .select('*')
         .order('timestamp', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('getAllAttendanceRecords error:', error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        console.warn('getAllAttendanceRecords: No data from Supabase, falling back to localStorage');
+        throw new Error('No data from Supabase');
+      }
+      
+      console.log('getAllAttendanceRecords: Got', data.length, 'records from Supabase');
       return data as AttendanceRecord[];
     }
-    throw new Error('Supabase skipped');
+    throw new Error('Supabase not configured');
   } catch (err) {
+    console.error('getAllAttendanceRecords fallback:', err);
     // Local Storage Fallback: Return everything
     const all = JSON.parse(localStorage.getItem('bapekom_attendance') || '[]');
+    console.log('getAllAttendanceRecords: Using localStorage with', all.length, 'records');
     return all.sort((a: AttendanceRecord, b: AttendanceRecord) =>
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
