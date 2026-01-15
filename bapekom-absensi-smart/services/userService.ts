@@ -22,11 +22,16 @@ export const getUsers = async (): Promise<User[]> => {
  * @returns {Promise<User>} A promise that resolves to the newly created user.
  */
 export const addUser = async (newUser: Omit<User, 'id'> & { password?: string, email?: string }): Promise<User> => {
+  // Validasi input
+  if (!newUser.email || !newUser.password) {
+    throw new Error("Email dan Password harus diisi untuk membuat user.");
+  }
+
   // 1. Cek apakah kita punya Service Key untuk mendaftarkan Auth User
   const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
   let authUserId = null;
 
-  if (serviceKey && newUser.email && newUser.password) {
+  if (serviceKey) {
     try {
       // Inisialisasi client admin khusus untuk operasi ini
       const supabaseURL = import.meta.env.VITE_SUPABASE_URL;
@@ -59,7 +64,8 @@ export const addUser = async (newUser: Omit<User, 'id'> & { password?: string, e
       throw new Error(e.message || "Gagal mendaftarkan login pengguna.");
     }
   } else {
-    console.warn("Service Key atau Email/Password tidak lengkap. User hanya akan dibuat di database publik (TIDAK BISA LOGIN).");
+    console.warn("⚠️ SERVICE_KEY tidak ditemukan di .env! User hanya akan dibuat di database publik (TIDAK BISA LOGIN). Pastikan VITE_SUPABASE_SERVICE_KEY ada di .env");
+    throw new Error("Service Key tidak ditemukan. Hubungi admin untuk setup Supabase Service Key di .env");
   }
 
   // 2. Simpan data profil ke tabel users
@@ -68,7 +74,7 @@ export const addUser = async (newUser: Omit<User, 'id'> & { password?: string, e
     name: string;
     username: string;
     division: string;
-    role: 'intern' | 'admin';
+    role: 'intern' | 'admin' | 'super-admin';
     email?: string | null; // Izinkan string atau null
     password?: string;
     id?: string;
@@ -95,6 +101,7 @@ export const addUser = async (newUser: Omit<User, 'id'> & { password?: string, e
 
   if (error) {
     console.error("Error adding user to public DB:", error);
+    console.error("Payload yang gagal:", payload);
     // Jika gagal simpan DB, idealnya kita rollback (hapus) Auth User yang tadi dibuat
     if (authUserId && serviceKey) {
       // Rollback logic (simplified)
@@ -105,6 +112,9 @@ export const addUser = async (newUser: Omit<User, 'id'> & { password?: string, e
     }
     throw error;
   }
+  
+  console.log("✅ User berhasil ditambahkan ke database:", data);
+  console.log("Auth ID:", authUserId, "| DB ID:", data.id);
   return data;
 };
 
@@ -289,6 +299,7 @@ export const loginUser = async (username: string, password: string): Promise<Use
   }
 
   console.log(`User ${email} signed in successfully. Fetching user profile...`);
+  console.log(`Auth User ID: ${authData.user.id}`);
 
   // Step 3: Fetch the complete user profile from the 'users' table to return to the app.
   try {
@@ -300,9 +311,26 @@ export const loginUser = async (username: string, password: string): Promise<Use
 
     if (profileError) {
       console.error(`Error fetching user profile for user ID ${authData.user.id}:`, profileError);
+      console.error("Profile Error Details:", profileError.message, profileError.code);
+      
+      // If profile not found, try fallback: search by email instead
+      if (profileError.code === 'PGRST116') { // "not found" error
+        console.log("Profile not found by ID, trying to fetch by email...");
+        const { data: emailProfileData, error: emailError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .single();
+        
+        if (!emailError && emailProfileData) {
+          console.log("✅ Found profile by email, returning it...");
+          return emailProfileData;
+        }
+      }
+      
       // If the profile doesn't exist, log the user out to prevent a broken state.
       await supabase.auth.signOut();
-      throw new Error('Gagal mengambil profil pengguna setelah login.');
+      throw new Error('Gagal mengambil profil pengguna setelah login. Hubungi admin untuk verifikasi data user Anda.');
     }
 
     if (!profileData) {
@@ -311,7 +339,8 @@ export const loginUser = async (username: string, password: string): Promise<Use
       throw new Error('Profil pengguna tidak ditemukan setelah login.');
     }
 
-    console.log("Successfully fetched user profile.");
+    console.log("✅ Successfully fetched user profile.");
+    return profileData;
     return profileData as User;
 
   } catch (e) {

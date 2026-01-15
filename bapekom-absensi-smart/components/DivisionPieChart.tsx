@@ -28,14 +28,22 @@ const DivisionPieChart: React.FC<DivisionPieChartProps> = ({ users }) => {
                 label: 'Jumlah Peserta',
                 data: dataValues,
                 backgroundColor: [
-                    'rgba(59, 130, 246, 0.7)', // blue
-                    'rgba(16, 185, 129, 0.7)', // emerald
-                    'rgba(245, 158, 11, 0.7)', // amber
-                    'rgba(139, 92, 246, 0.7)', // violet
-                    'rgba(236, 72, 153, 0.7)', // pink
-                    'rgba(107, 114, 128, 0.7)', // slate
+                    'rgba(59, 130, 246, 0.8)',  // biru
+                    'rgba(234, 179, 8, 0.8)',   // kuning
+                    'rgba(239, 68, 68, 0.8)',   // merah
+                    'rgba(31, 41, 55, 0.8)',    // hitam/slate-900
+                    'rgba(59, 130, 246, 0.6)',  // biru lebih terang
+                    'rgba(234, 179, 8, 0.6)',   // kuning lebih terang
                 ],
-                borderWidth: 0,
+                borderColor: [
+                    'rgba(37, 99, 235, 1)',     // biru gelap
+                    'rgba(202, 138, 4, 1)',     // kuning gelap
+                    'rgba(220, 38, 38, 1)',     // merah gelap
+                    'rgba(0, 0, 0, 1)',         // hitam
+                    'rgba(37, 99, 235, 1)',     // biru gelap
+                    'rgba(202, 138, 4, 1)',     // kuning gelap
+                ],
+                borderWidth: 2,
             },
         ],
     };

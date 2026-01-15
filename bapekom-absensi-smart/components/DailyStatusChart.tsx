@@ -21,16 +21,16 @@ const DailyStatusChart: React.FC<DailyStatusChartProps> = ({ stats }) => {
           stats?.alpaToday || 0,
         ],
         backgroundColor: [
-          'rgba(59, 130, 246, 0.7)',  // blue-500
-          'rgba(239, 68, 68, 0.7)',   // red-500
-          'rgba(107, 114, 128, 0.7)', // gray-500
+          'rgba(59, 130, 246, 0.8)',  // biru
+          'rgba(234, 179, 8, 0.8)',   // kuning
+          'rgba(239, 68, 68, 0.8)',   // merah
         ],
         borderColor: [
-          'rgba(59, 130, 246, 1)',
-          'rgba(239, 68, 68, 1)',
-          'rgba(107, 114, 128, 1)',
+          'rgba(37, 99, 235, 1)',     // biru lebih gelap
+          'rgba(202, 138, 4, 1)',     // kuning lebih gelap
+          'rgba(220, 38, 38, 1)',     // merah lebih gelap
         ],
-        borderWidth: 1,
+        borderWidth: 2,
       },
     ],
   };

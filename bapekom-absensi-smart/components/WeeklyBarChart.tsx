@@ -16,14 +16,18 @@ const WeeklyBarChart: React.FC<WeeklyBarChartProps> = ({ stats }) => {
             {
                 label: 'Hadir',
                 data: stats.map(s => s.present),
-                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                backgroundColor: 'rgba(59, 130, 246, 0.8)', // biru
                 borderRadius: 6,
+                borderColor: 'rgba(37, 99, 235, 1)',
+                borderWidth: 1,
             },
             {
                 label: 'Terlambat',
                 data: stats.map(s => s.late),
-                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                backgroundColor: 'rgba(234, 179, 8, 0.8)', // kuning
                 borderRadius: 6,
+                borderColor: 'rgba(202, 138, 4, 1)',
+                borderWidth: 1,
             },
         ],
     };

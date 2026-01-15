@@ -429,13 +429,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
     try {
       await addUser(newUserForm);
-      toast.success("User berhasil ditambahkan!");
+      toast.success("User berhasil ditambahkan! User dapat login dengan email dan password yang telah ditetapkan.");
       setShowAddUserModal(false);
       setNewUserForm({ name: '', username: '', email: '', password: '', division: '', role: 'intern' });
       fetchUsers();
       fetchData(); // Refresh total interns count
-    } catch (error) {
-      toast.error("Gagal menambahkan user.");
+    } catch (error: any) {
+      const errorMessage = error.message || "Gagal menambahkan user.";
+      console.error("Error adding user:", error);
+      toast.error(`Gagal menambahkan user: ${errorMessage}`);
     }
   };
 
@@ -643,29 +645,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                  <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i className="fas fa-users text-6xl"></i></div>
-                  <p className="text-3xl font-bold dark:text-white mb-1">{stats?.presentToday || 0}</p>
-                  <p className="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Hadir Hari Ini</p>
+                {/* Hadir Hari Ini - Biru */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/50 p-5 rounded-2xl border-2 border-blue-300 dark:border-blue-700 shadow-lg shadow-blue-500/20 relative overflow-hidden group hover:shadow-xl hover:shadow-blue-500/30 transition-all">
+                  <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-blue-600"><i className="fas fa-users text-6xl"></i></div>
+                  <p className="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-1">{stats?.presentToday || 0}</p>
+                  <p className="text-[10px] md:text-xs text-blue-600 dark:text-blue-400 uppercase font-bold tracking-wider">Hadir Hari Ini</p>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                  <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-red-500"><i className="fas fa-clock text-6xl"></i></div>
-                  <p className="text-3xl font-bold dark:text-white mb-1">{stats?.lateToday || 0}</p>
-                  <p className="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Terlambat</p>
+                
+                {/* Terlambat - Kuning */}
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-900/50 p-5 rounded-2xl border-2 border-yellow-400 dark:border-yellow-700 shadow-lg shadow-yellow-500/20 relative overflow-hidden group hover:shadow-xl hover:shadow-yellow-500/30 transition-all">
+                  <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-yellow-600"><i className="fas fa-clock text-6xl"></i></div>
+                  <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-300 mb-1">{stats?.lateToday || 0}</p>
+                  <p className="text-[10px] md:text-xs text-yellow-600 dark:text-yellow-400 uppercase font-bold tracking-wider">Terlambat</p>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                  <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-purple-500"><i className="fas fa-notes-medical text-6xl"></i></div>
-                  <p className="text-3xl font-bold dark:text-white mb-1">{stats?.onLeaveToday || 0}</p>
-                  <p className="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Izin/Sakit</p>
+                
+                {/* Izin/Sakit - Biru */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/50 p-5 rounded-2xl border-2 border-blue-300 dark:border-blue-700 shadow-lg shadow-blue-500/20 relative overflow-hidden group hover:shadow-xl hover:shadow-blue-500/30 transition-all">
+                  <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-blue-600"><i className="fas fa-notes-medical text-6xl"></i></div>
+                  <p className="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-1">{stats?.onLeaveToday || 0}</p>
+                  <p className="text-[10px] md:text-xs text-blue-600 dark:text-blue-400 uppercase font-bold tracking-wider">Izin/Sakit</p>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                  <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-slate-500"><i className="fas fa-user-times text-6xl"></i></div>
-                  <p className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">{stats?.alpaToday || 0}</p>
-                  <p className="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Alpa (Tidak Hadir)</p>
+                
+                {/* Alpa - Merah */}
+                <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/50 p-5 rounded-2xl border-2 border-red-400 dark:border-red-700 shadow-lg shadow-red-500/20 relative overflow-hidden group hover:shadow-xl hover:shadow-red-500/30 transition-all">
+                  <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-red-600"><i className="fas fa-user-times text-6xl"></i></div>
+                  <p className="text-3xl font-bold text-red-700 dark:text-red-300 mb-1">{stats?.alpaToday || 0}</p>
+                  <p className="text-[10px] md:text-xs text-red-600 dark:text-red-400 uppercase font-bold tracking-wider">Alpa (Tidak Hadir)</p>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                  <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-blue-500"><i className="fas fa-id-card text-6xl"></i></div>
-                  <p className="text-3xl font-bold dark:text-white mb-1">{stats?.totalInterns || 0}</p>
+                
+                {/* Total Peserta - Hitam */}
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-slate-950 p-5 rounded-2xl border-2 border-slate-700 dark:border-slate-600 shadow-lg shadow-slate-900/20 relative overflow-hidden group hover:shadow-xl hover:shadow-slate-900/30 transition-all">
+                  <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-slate-400"><i className="fas fa-id-card text-6xl"></i></div>
+                  <p className="text-3xl font-bold text-white mb-1">{stats?.totalInterns || 0}</p>
                   <p className="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Total Peserta</p>
                 </div>
               </div>

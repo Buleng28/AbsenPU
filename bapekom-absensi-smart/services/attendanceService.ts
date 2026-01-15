@@ -34,6 +34,40 @@ const isTodayInRange = (startDate: string, endDate: string) => {
   return today >= startDate && today <= endDate;
 };
 
+// Helper to get today's date in YYYY-MM-DD format
+const getTodayDateString = (): string => {
+  return new Date().toISOString().split('T')[0];
+};
+
+// Helper to safely extract date from timestamp
+const getDateFromTimestamp = (timestamp: string | null | undefined): string | null => {
+  if (!timestamp) return null;
+  try {
+    // Try to parse as date and return ISO date string
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid timestamp:', timestamp);
+      return null;
+    }
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    console.warn('Error parsing timestamp:', timestamp, e);
+    return null;
+  }
+};
+
+// Function to get date range for "today" considering timezone
+const getTodayDateRange = (): { start: string; end: string } => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  return {
+    start: today.toISOString().split('T')[0],
+    end: tomorrow.toISOString().split('T')[0],
+  };
+};
+
 // --- Service Methods ---
 
 // Helper to upload photo to Supabase Storage
@@ -138,20 +172,44 @@ export const getTodaysRecords = async (): Promise<AttendanceRecord[]> => {
     // Get ALL records first from Supabase
     const allRecords = await getAllAttendanceRecords();
     
+    if (!allRecords || allRecords.length === 0) {
+      console.log('getTodaysRecords: No records found at all');
+      return [];
+    }
+
     // Filter for today's records only
-    const today = new Date().toISOString().split('T')[0];
-    const todaysRecords = allRecords.filter(r => r.timestamp.startsWith(today));
+    const todayDateStr = getTodayDateString();
+    console.log('getTodaysRecords: Today date is:', todayDateStr);
+    console.log('getTodaysRecords: Total records in DB:', allRecords.length);
     
-    console.log('getTodaysRecords: Looking for date:', today);
-    console.log('getTodaysRecords: Found', todaysRecords.length, 'records for today');
+    // Log first few records for debugging
+    if (allRecords.length > 0) {
+      console.log('getTodaysRecords: First record timestamp:', allRecords[0].timestamp);
+      console.log('getTodaysRecords: First record extracted date:', getDateFromTimestamp(allRecords[0].timestamp));
+    }
+
+    const todaysRecords = allRecords.filter(r => {
+      const recordDate = getDateFromTimestamp(r.timestamp);
+      const isToday = recordDate === todayDateStr;
+      if (isToday) {
+        console.log(`getTodaysRecords: Found today's record - User: ${r.userName}, Timestamp: ${r.timestamp}`);
+      }
+      return isToday;
+    });
+    
+    console.log('getTodaysRecords: FINAL RESULT - Found', todaysRecords.length, 'records for today');
     
     return todaysRecords;
   } catch (err) {
     console.error("Error fetching today's records:", err);
     // Local Storage Fallback
     const all = JSON.parse(localStorage.getItem('bapekom_attendance') || '[]');
-    const todayStr = new Date().toISOString().split('T')[0];
-    return all.filter((r: AttendanceRecord) => r.timestamp.startsWith(todayStr));
+    const todayStr = getTodayDateString();
+    console.log('getTodaysRecords: Using localStorage fallback with', all.length, 'records');
+    return all.filter((r: AttendanceRecord) => {
+      const recordDate = getDateFromTimestamp(r.timestamp);
+      return recordDate === todayStr;
+    });
   }
 };
 
@@ -165,7 +223,10 @@ export const getRecentRecords = async (): Promise<AttendanceRecord[]> => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
     
-    const recentRecords = allRecords.filter(r => r.timestamp >= thirtyDaysAgoStr);
+    const recentRecords = allRecords.filter(r => {
+      const recordDate = getDateFromTimestamp(r.timestamp);
+      return recordDate && recordDate >= thirtyDaysAgoStr;
+    });
     console.log('getRecentRecords: Returning', recentRecords.length, 'records from last 30 days');
     return recentRecords;
   } catch (err) {
@@ -194,6 +255,12 @@ export const getAllAttendanceRecords = async (): Promise<AttendanceRecord[]> => 
       }
       
       console.log('getAllAttendanceRecords: Got', data.length, 'records from Supabase');
+      console.log('getAllAttendanceRecords: First 3 records:', data.slice(0, 3).map(r => ({
+        id: r.id,
+        userName: r.userName,
+        timestamp: r.timestamp,
+        type: r.type
+      })));
       return data as AttendanceRecord[];
     }
     throw new Error('Supabase not configured');

@@ -13,7 +13,8 @@ const normalizeDivision = (division: string): string => {
   
   // Merge similar divisions
   if (normalized.includes('arsip')) return 'Arsiparis';
-  if (normalized.includes('komputer') || normalized.includes('pranata')) return 'Pranata Komputer';
+  if (normalized.includes('diklat')) return 'Pranata Diklat';
+  if (normalized.includes('komputer') || normalized.includes('pranata komputer')) return 'Pranata Komputer';
   
   return division;
 };
@@ -76,6 +77,9 @@ const AttendanceOverview: React.FC<AttendanceOverviewProps> = ({ allAttendance, 
     
     allAttendance.forEach(record => {
       const div = normalizeDivision(record.division);
+      // Skip divisi IT
+      if (div.toLowerCase().includes('it')) return;
+      
       const current = divisions.get(div) || { count: 0, late: 0, valid: 0 };
       
       divisions.set(div, {
