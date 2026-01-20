@@ -1,0 +1,16 @@
+# Ignore environment files (keep secrets out of repo)
+.env
+.env.local
+bapekom-absensi-smart/.env
+bapekom-absensi-smart/.env.local
+
+# Node / build artifacts
+node_modules/
+dist/
+build/
+
+# Editor/IDE
+.vscode/
+
+# Keep example env in repo
+!/.env.example

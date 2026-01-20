@@ -7,7 +7,11 @@
     "dev": "cd bapekom-absensi-smart && vite --host --port 3000 --strictPort",
     "build": "cd bapekom-absensi-smart && vite build",
     "preview": "cd bapekom-absensi-smart && vite preview",
-    "seed": "cd bapekom-absensi-smart && node --import=dotenv/config --loader ts-node/esm services/seed.ts"
+    "seed": "cd bapekom-absensi-smart && node --import=dotenv/config --loader ts-node/esm services/seed.ts",
+    "cleanup:attendance": "cd bapekom-absensi-smart && node --import=dotenv/config --loader ts-node/esm services/cleanupAttendance.ts",
+    "cleanup:attendance:dry": "cd bapekom-absensi-smart && DRY_RUN=1 node --import=dotenv/config --loader ts-node/esm services/cleanupAttendance.ts",
+    "cleanup:storage": "cd bapekom-absensi-smart && node --import=dotenv/config --loader ts-node/esm services/cleanupStorage.ts",
+    "cleanup:storage:dry": "cd bapekom-absensi-smart && DRY_RUN=1 node --import=dotenv/config --loader ts-node/esm services/cleanupStorage.ts"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",

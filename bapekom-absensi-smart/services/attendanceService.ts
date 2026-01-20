@@ -36,20 +36,21 @@ const isTodayInRange = (startDate: string, endDate: string) => {
 
 // Helper to get today's date in YYYY-MM-DD format
 const getTodayDateString = (): string => {
-  return new Date().toISOString().split('T')[0];
+  // Use local timezone date in YYYY-MM-DD format
+  return new Date().toLocaleDateString('en-CA');
 };
 
 // Helper to safely extract date from timestamp
 const getDateFromTimestamp = (timestamp: string | null | undefined): string | null => {
   if (!timestamp) return null;
   try {
-    // Try to parse as date and return ISO date string
+    // Parse timestamp and return local date in YYYY-MM-DD
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
       console.warn('Invalid timestamp:', timestamp);
       return null;
     }
-    return date.toISOString().split('T')[0];
+    return date.toLocaleDateString('en-CA');
   } catch (e) {
     console.warn('Error parsing timestamp:', timestamp, e);
     return null;

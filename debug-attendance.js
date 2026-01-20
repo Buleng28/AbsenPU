@@ -38,19 +38,47 @@ async function checkAttendance() {
         console.log(`  ---`);
       });
 
-      // Check today's date
-      const today = new Date().toISOString().split('T')[0];
-      console.log(`\nToday's date: ${today}`);
+      // Check today's date (UTC, container local, and Jakarta)
+      const todayUTC = new Date().toISOString().split('T')[0];
+      const todayLocal = new Date().toLocaleDateString('en-CA');
+      const todayJakarta = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+      console.log(`\nToday's UTC date: ${todayUTC}`);
+      console.log(`Today's Local date (container): ${todayLocal}`);
+      console.log(`Today's Jakarta date (simulated): ${todayJakarta}`);
       
-      const todayRecords = data.filter(r => {
-        const recordDate = new Date(r.timestamp).toISOString().split('T')[0];
-        return recordDate === today;
+      const todayRecordsUTC = data.filter(r => {
+        const recordDateUTC = new Date(r.timestamp).toISOString().split('T')[0];
+        return recordDateUTC === todayUTC;
       });
 
-      console.log(`Records for today: ${todayRecords.length}`);
-      if (todayRecords.length > 0) {
-        todayRecords.forEach(r => {
-          console.log(`  - ${r.userName} at ${r.timestamp}`);
+      const todayRecordsLocal = data.filter(r => {
+        const recordDateLocal = new Date(r.timestamp).toLocaleDateString('en-CA');
+        return recordDateLocal === todayLocal;
+      });
+
+      const todayRecordsJakarta = data.filter(r => {
+        const recordDateJakarta = new Date(r.timestamp).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+        return recordDateJakarta === todayJakarta;
+      });
+
+      console.log(`Records for today (UTC): ${todayRecordsUTC.length}`);
+      if (todayRecordsUTC.length > 0) {
+        todayRecordsUTC.forEach(r => {
+          console.log(`  - (UTC) ${r.userName} at ${r.timestamp}`);
+        });
+      }
+
+      console.log(`Records for today (container local): ${todayRecordsLocal.length}`);
+      if (todayRecordsLocal.length > 0) {
+        todayRecordsLocal.forEach(r => {
+          console.log(`  - (Local) ${r.userName} at ${r.timestamp} -> localDate: ${new Date(r.timestamp).toLocaleDateString('en-CA')}`);
+        });
+      }
+
+      console.log(`Records for today (Jakarta): ${todayRecordsJakarta.length}`);
+      if (todayRecordsJakarta.length > 0) {
+        todayRecordsJakarta.forEach(r => {
+          console.log(`  - (Jakarta) ${r.userName} at ${r.timestamp} -> jakartaDate: ${new Date(r.timestamp).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' })}`);
         });
       }
     }
